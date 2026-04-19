@@ -1,25 +1,15 @@
 import { useEffect, useState } from "react";
-import { db } from "../../lib/firebase";
-import {
-  collection,
-  query,
-  where,
-  onSnapshot,
-} from "firebase/firestore";
-
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Download, Users } from "lucide-react";
 
-// ✅ Dynamic types
-type ResponseData = {
-  [key: string]: string | string[];
-};
+import { db } from "../../lib/firebase";
+import { collection, getDocs, query, where } from "firebase/firestore";
 
-type ResponseType = {
+interface ResponseType {
   id: string;
-  timestamp: any;
-  data: ResponseData;
-};
+  formId: string;
+  data: Record<string, any>;
+  createdAt?: any;
+}
 
 export function FormResponses() {
   const { formId } = useParams();
@@ -27,136 +17,86 @@ export function FormResponses() {
   const [responses, setResponses] = useState<ResponseType[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Fetch responses from Firebase
+  // ✅ FETCH RESPONSES
   useEffect(() => {
-    if (!formId) return;
+    const fetchResponses = async () => {
+      try {
+        if (!formId) return;
 
-    const q = query(
-      collection(db, "responses"),
-      where("formId", "==", formId)
-    );
+        const q = query(
+          collection(db, "responses"),
+          where("formId", "==", formId)
+        );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data: ResponseType[] = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as ResponseType[];
+        const snapshot = await getDocs(q);
 
-      setResponses(data);
-      setLoading(false);
-    });
+        const data: ResponseType[] = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...(doc.data() as Omit<ResponseType, "id">),
+        }));
 
-    return () => unsubscribe();
+        setResponses(data);
+      } catch (err) {
+        console.error("❌ Error fetching responses:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchResponses();
   }, [formId]);
 
-  // ✅ CSV Export
-  const exportToCSV = () => {
-    if (responses.length === 0) return;
-
-    const headers = Object.keys(responses[0].data);
-
-    const rows = responses.map((res) =>
-      headers.map((key) => {
-        const value = res.data[key];
-        return Array.isArray(value) ? value.join(", ") : value || "";
-      })
-    );
-
-    const csv = [
-      ["Timestamp", ...headers],
-      ...rows.map((row, idx) => [
-        responses[idx].timestamp?.toDate?.().toLocaleString() || "",
-        ...row,
-      ]),
-    ]
-      .map((row) =>
-        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
-      )
-      .join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `responses-${formId}.csv`;
-    a.click();
-
-    window.URL.revokeObjectURL(url);
-  };
+  if (loading) {
+    return <div className="p-10 text-center">Loading responses...</div>;
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 p-6">
       {/* HEADER */}
-      <header className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </Link>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Form Responses</h1>
 
-          <button
-            onClick={exportToCSV}
-            className="bg-purple-600 text-white px-4 py-2 rounded"
-          >
-            <Download className="w-4 h-4 inline mr-1" />
-            Export CSV
-          </button>
+        <Link
+          to={`/forms/${formId}`}
+          className="text-purple-600 hover:underline"
+        >
+          Back to Form
+        </Link>
+      </div>
+
+      {/* EMPTY STATE */}
+      {responses.length === 0 ? (
+        <div className="text-center text-gray-500 mt-20">
+          No responses yet 😢
         </div>
-      </header>
+      ) : (
+        <div className="space-y-4">
+          {responses.map((res, index) => (
+            <div
+              key={res.id}
+              className="bg-white p-4 rounded shadow"
+            >
+              <h2 className="font-semibold mb-2">
+                Response #{index + 1}
+              </h2>
 
-      {/* MAIN */}
-      <main className="max-w-6xl mx-auto p-4">
-        <h1 className="text-2xl mb-4">Responses</h1>
-
-        <div className="flex items-center gap-2 mb-4 text-gray-600">
-          <Users className="w-5 h-5" />
-          {responses.length} responses
-        </div>
-
-        {loading ? (
-          <p>Loading...</p>
-        ) : responses.length === 0 ? (
-          <p>No responses yet</p>
-        ) : (
-          <div className="bg-white border rounded overflow-auto">
-            <table className="w-full">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="p-2 text-left">Timestamp</th>
-                  {Object.keys(responses[0].data).map((key) => (
-                    <th key={key} className="p-2 text-left">
-                      Q{key}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-
-              <tbody>
-                {responses.map((res) => (
-                  <tr key={res.id} className="border-t">
-                    <td className="p-2">
-                      {res.timestamp?.toDate?.().toLocaleString()}
-                    </td>
-
-                    {Object.keys(res.data).map((key) => {
-                      const value = res.data[key];
-
-                      return (
-                        <td key={key} className="p-2">
-                          {Array.isArray(value)
-                            ? value.join(", ")
-                            : value}
-                        </td>
-                      );
-                    })}
-                  </tr>
+              {/* DISPLAY ANSWERS */}
+              <div className="space-y-2">
+                {Object.entries(res.data).map(([key, value]) => (
+                  <div key={key} className="border-b pb-2">
+                    <p className="text-sm text-gray-500">{key}</p>
+                    <p className="font-medium">
+                      {Array.isArray(value)
+                        ? value.join(", ")
+                        : value}
+                    </p>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </main>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

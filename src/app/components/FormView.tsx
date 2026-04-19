@@ -33,58 +33,50 @@ export function FormView() {
   const { formId } = useParams();
 
   const [form, setForm] = useState<FormDataType | null>(null);
-  const [loading, setLoading] = useState(true); // ✅ FIX
+  const [loading, setLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
   const [formValues, setFormValues] = useState<Record<string, any>>({});
 
-  // ✅ FETCH FORM FROM FIREBASE
+  // ✅ FETCH FORM
   useEffect(() => {
     const fetchForm = async () => {
-      console.log("FORM ID:", formId); // 🔍 debug
-
-      if (!formId) {
-        setLoading(false);
-        return;
-      }
-
       try {
+        console.log("👉 FORM ID:", formId);
+
+        if (!formId) {
+          setLoading(false);
+          return;
+        }
+
         const docRef = doc(db, "forms", formId);
         const docSnap = await getDoc(docRef);
 
+        console.log("👉 EXISTS:", docSnap.exists());
+
         if (docSnap.exists()) {
-          console.log("FORM DATA:", docSnap.data()); // 🔍 debug
-          setForm(docSnap.data() as FormDataType);
+          const data = docSnap.data();
+
+          setForm({
+            title: data.title || "",
+            description: data.description || "",
+            fields: data.fields || [],
+          });
+
+          console.log("👉 FORM DATA:", data);
         } else {
-          console.log("Form not found");
           setForm(null);
         }
-      } catch (error) {
-        console.error(error);
+      } catch (err) {
+        console.error("❌ Error fetching form:", err);
       } finally {
-        setLoading(false); // ✅ IMPORTANT
+        setLoading(false);
       }
     };
 
     fetchForm();
   }, [formId]);
 
-  // ✅ SUBMIT RESPONSE
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    try {
-      await addDoc(collection(db, "responses"), {
-        formId,
-        data: formValues,
-        timestamp: new Date(),
-      });
-
-      setSubmitted(true);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
+  // ✅ HANDLE INPUT
   const handleFieldChange = (fieldId: string, value: any) => {
     setFormValues((prev) => ({
       ...prev,
@@ -92,6 +84,7 @@ export function FormView() {
     }));
   };
 
+  // ✅ CHECKBOX HANDLING
   const handleCheckboxChange = (
     fieldId: string,
     option: string,
@@ -106,12 +99,29 @@ export function FormView() {
     handleFieldChange(fieldId, newValues);
   };
 
-  // ✅ LOADING STATE
+  // ✅ SUBMIT FORM
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      await addDoc(collection(db, "responses"), {
+        formId,
+        data: formValues,
+        createdAt: new Date(),
+      });
+
+      setSubmitted(true);
+    } catch (err) {
+      console.error("❌ Submit error:", err);
+    }
+  };
+
+  // LOADING
   if (loading) {
     return <div className="p-10 text-center">Loading form...</div>;
   }
 
-  // ❌ FORM NOT FOUND
+  // NOT FOUND
   if (!form) {
     return (
       <div className="p-10 text-center text-red-500">
@@ -120,7 +130,7 @@ export function FormView() {
     );
   }
 
-  // ✅ SUCCESS PAGE
+  // SUCCESS SCREEN
   if (submitted) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -130,7 +140,7 @@ export function FormView() {
           <p className="text-gray-500 mb-4">
             Your response has been recorded.
           </p>
-          <Link to="/" className="text-purple-600 hover:underline">
+          <Link to="/" className="text-purple-600">
             Go Home
           </Link>
         </div>
@@ -169,10 +179,10 @@ export function FormView() {
               {field.type === "text" && (
                 <input
                   required={field.required}
+                  className="w-full border p-2 rounded"
                   onChange={(e) =>
                     handleFieldChange(field.id, e.target.value)
                   }
-                  className="w-full border p-2 rounded"
                 />
               )}
 
@@ -181,10 +191,10 @@ export function FormView() {
                 <input
                   type="email"
                   required={field.required}
+                  className="w-full border p-2 rounded"
                   onChange={(e) =>
                     handleFieldChange(field.id, e.target.value)
                   }
-                  className="w-full border p-2 rounded"
                 />
               )}
 
@@ -192,73 +202,69 @@ export function FormView() {
               {field.type === "textarea" && (
                 <textarea
                   required={field.required}
+                  className="w-full border p-2 rounded"
                   onChange={(e) =>
                     handleFieldChange(field.id, e.target.value)
                   }
-                  className="w-full border p-2 rounded"
                 />
               )}
 
               {/* RADIO */}
-              {field.type === "radio" && (
-                <div className="space-y-1">
-                  {field.options?.map((opt) => (
-                    <label key={opt} className="block">
-                      <input
-                        type="radio"
-                        name={field.id}
-                        value={opt}
-                        required={field.required}
-                        onChange={(e) =>
-                          handleFieldChange(field.id, e.target.value)
-                        }
-                      />{" "}
-                      {opt}
-                    </label>
-                  ))}
-                </div>
-              )}
+              {field.type === "radio" &&
+                field.options?.map((opt) => (
+                  <label key={opt} className="block">
+                    <input
+                      type="radio"
+                      name={field.id}
+                      value={opt}
+                      required={field.required}
+                      onChange={(e) =>
+                        handleFieldChange(field.id, e.target.value)
+                      }
+                    />{" "}
+                    {opt}
+                  </label>
+                ))}
 
               {/* CHECKBOX */}
-              {field.type === "checkbox" && (
-                <div className="space-y-1">
-                  {field.options?.map((opt) => (
-                    <label key={opt} className="block">
-                      <input
-                        type="checkbox"
-                        onChange={(e) =>
-                          handleCheckboxChange(
-                            field.id,
-                            opt,
-                            e.target.checked
-                          )
-                        }
-                      />{" "}
-                      {opt}
-                    </label>
-                  ))}
-                </div>
-              )}
+              {field.type === "checkbox" &&
+                field.options?.map((opt) => (
+                  <label key={opt} className="block">
+                    <input
+                      type="checkbox"
+                      onChange={(e) =>
+                        handleCheckboxChange(
+                          field.id,
+                          opt,
+                          e.target.checked
+                        )
+                      }
+                    />{" "}
+                    {opt}
+                  </label>
+                ))}
 
               {/* DROPDOWN */}
               {field.type === "dropdown" && (
                 <select
                   required={field.required}
+                  className="w-full border p-2 rounded"
                   onChange={(e) =>
                     handleFieldChange(field.id, e.target.value)
                   }
-                  className="w-full border p-2 rounded"
                 >
                   <option value="">Select</option>
                   {field.options?.map((opt) => (
-                    <option key={opt}>{opt}</option>
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
                   ))}
                 </select>
               )}
             </div>
           ))}
 
-          <button className="w-full bg-purple-600 text-white p-3 rounded hover:bg-purple-700">
+          <button className="w-full bg-purple-600 text-white p-3 rounded">
             Submit
           </button>
         </form>

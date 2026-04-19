@@ -1,7 +1,7 @@
 // Import the functions you need
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-// (optional) analytics
+import { getAuth } from "firebase/auth"; // 🔥 ADD THIS
 import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
@@ -17,8 +17,11 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// ✅ ADD THIS (Firestore)
+// ✅ FIRESTORE
 export const db = getFirestore(app);
 
-// (optional) Analytics
+// ✅ AUTH (🔥 THIS FIXES YOUR ISSUE)
+export const auth = getAuth(app);
+
+// (optional)
 getAnalytics(app);
