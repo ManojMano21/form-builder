@@ -1,8 +1,7 @@
-// Import the functions you need
+// src/lib/firebase.ts
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth"; // 🔥 ADD THIS
-import { getAnalytics } from "firebase/analytics";
+import { getAuth, GoogleAuthProvider } from "firebase/auth"; // ✅ ADD THIS
 
 const firebaseConfig = {
   apiKey: "AIzaSyBsBG7_8SGdaNitan18bbd2TLqRz7I-XoE",
@@ -14,14 +13,14 @@ const firebaseConfig = {
   measurementId: "G-B67Y9NRKMJ",
 };
 
-// Initialize Firebase
+// ✅ Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// ✅ FIRESTORE
+// ✅ Firestore
 export const db = getFirestore(app);
 
-// ✅ AUTH (🔥 THIS FIXES YOUR ISSUE)
+// ✅ Auth
 export const auth = getAuth(app);
 
-// (optional)
-getAnalytics(app);
+// 🔥 ADD THIS (IMPORTANT)
+export const googleProvider = new GoogleAuthProvider();

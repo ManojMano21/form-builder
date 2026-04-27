@@ -1,3 +1,4 @@
+// src/app/components/Home.tsx
 import { Link } from "react-router-dom";
 import { Plus, FileText } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -26,7 +27,6 @@ export function Home() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // ✅ GET FORMS
         const formSnap = await getDocs(collection(db, "forms"));
 
         const formList: FormType[] = formSnap.docs.map((doc) => ({
@@ -36,7 +36,6 @@ export function Home() {
 
         setForms(formList);
 
-        // ✅ GET RESPONSE COUNTS
         const counts: Record<string, number> = {};
 
         for (const form of formList) {
@@ -62,29 +61,52 @@ export function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+
       {/* HEADER */}
       <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between">
-          <div className="flex items-center gap-2">
-            <FileText className="w-8 h-8 text-purple-600" />
-            <h1 className="text-2xl font-semibold">FormBuilder</h1>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
 
-          <Link
-            to="/create"
-            className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg"
-          >
-            <Plus className="w-5 h-5" />
-            Create Form
-          </Link>
+          {/* LOGO */}
+          <h1 className="text-purple-600 text-2xl font-bold italic">
+            formbuilder
+          </h1>
+
+          {/* NAVIGATION */}
+          <div className="flex items-center gap-6">
+
+            <Link
+              to="/home"
+              className="text-gray-700 hover:text-purple-600"
+            >
+              Home
+            </Link>
+
+            <Link
+              to="/dashboard"
+              className="text-gray-700 hover:text-purple-600"
+            >
+              Dashboard
+            </Link>
+
+            <Link
+              to="/create"
+              className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg"
+            >
+              <Plus className="w-5 h-5" />
+              Create Form
+            </Link>
+
+          </div>
         </div>
       </header>
 
       {/* MAIN */}
       <main className="max-w-7xl mx-auto p-6">
+
         <h2 className="text-3xl font-semibold mb-2">
           Start a new form
         </h2>
+
         <p className="text-gray-600 mb-6">
           Create forms to collect information
         </p>
@@ -94,16 +116,16 @@ export function Home() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
-            {/* CREATE CARD */}
+            {/* CREATE NEW FORM CARD */}
             <Link
               to="/create"
-              className="bg-white border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center"
+              className="bg-white border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center hover:border-purple-600"
             >
               <Plus className="w-10 h-10 text-purple-600 mb-2" />
               <span>Blank Form</span>
             </Link>
 
-            {/* FORMS */}
+            {/* EXISTING FORMS */}
             {forms.map((form) => (
               <div
                 key={form.id}
@@ -120,6 +142,7 @@ export function Home() {
                 </p>
 
                 <div className="flex gap-2 mt-3">
+
                   <Link
                     to={`/forms/${form.id}`}
                     className="flex-1 text-center border border-purple-600 text-purple-600 py-1 rounded"
@@ -133,11 +156,14 @@ export function Home() {
                   >
                     Responses
                   </Link>
+
                 </div>
               </div>
             ))}
+
           </div>
         )}
+
       </main>
     </div>
   );

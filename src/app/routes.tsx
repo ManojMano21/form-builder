@@ -1,38 +1,29 @@
 import { createBrowserRouter } from "react-router-dom";
+
+import Login from "./components/Login";
+import Signup from "./components/Signup";
 import { Home } from "./components/Home";
+import Dashboard from "./components/Dashboard";
 import { FormBuilder } from "./components/FormBuilder";
-import { FormView } from "./components/FormView";
-import { FormResponses } from "./components/FormResponses";
+import { FormView } from "./components/FormView"; // ✅ ADD THIS
 
-
-// ✅ 404 Component
 function NotFound() {
-  return (
-    <div style={{ padding: "40px", textAlign: "center" }}>
-      <h1>404 - Page Not Found</h1>
-    </div>
-  );
+  return <h1>404 - Page Not Found</h1>;
 }
 
 export const router = createBrowserRouter([
-  {
-    path: "/",
-    Component: Home,
-  },
-  {
-    path: "/create",
-    Component: FormBuilder,
-  },
-  {
-    path: "/forms/:formId",
-    Component: FormView,
-  },
-  {
-    path: "/forms/:formId/responses",
-    Component: FormResponses,
-  },
-  {
-    path: "*",
-    Component: NotFound, // ✅ FIXED (no error)
-  },
+  { path: "/", element: <Login /> },
+  { path: "/login", element: <Login /> },
+  { path: "/signup", element: <Signup /> },
+
+  { path: "/dashboard", element: <Dashboard /> },
+
+  { path: "/create", element: <FormBuilder /> },
+
+  { path: "/home", element: <Home /> },
+
+  // 🔥 THIS IS THE MISSING PIECE
+  { path: "/forms/:formId", element: <FormView /> },
+
+  { path: "*", element: <NotFound /> },
 ]);
